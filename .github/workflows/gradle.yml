@@ -85,15 +85,10 @@ jobs:
         chmod 600 private_key
 
     - name: SSH and Deploy
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.REMOTE_HOST }}
-        username: ${{ secrets.REMOTE_USER }}
-        key: private_key
-        port: ${{ secrets.SSH_PORT }}
-        proxy_command: "ssh -W %h:%p -i private_key ubuntu@61.109.238.110"
-        script: |
+      run: |
+        ssh -o StrictHostKeyChecking=no -i private_key -o "ProxyCommand ssh -W %h:%p -i private_key ubuntu@${{ secrets.BASTION_HOST }}" ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} << 'EOF'
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/app:latest
           docker stop my_app_container || true
           docker rm my_app_container || true
           docker run -d -p 8080:8080 --name my_app_container ${{ secrets.DOCKERHUB_USERNAME }}/app:latest
+        EOF
